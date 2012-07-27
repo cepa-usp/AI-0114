@@ -29,10 +29,13 @@ package
 		private var distanceToCenter:Number = 20;
 		private var distanceToBoard:Number = raioCircle - 5;
 		
+		public var moveLock:Boolean = false;
+		public var resizeLock:Boolean = false;
+		
 		/**
 		 * Domínio aberto ou fechado.
 		 */
-		private var openDomain:Boolean = true;
+		public var openDomain:Boolean = true;
 		
 		public function Circunference() 
 		{
@@ -190,16 +193,28 @@ package
 				var distanceToBoard:Number = raioCircle - centerDistance;
 				
 				if (centerDistance < distanceToBoard) {
-					if (mouseMoveForm.visible == false) {
+					if(!moveLock){
+						if (mouseMoveForm.visible == false) {
+							mouseResizeForm.visible = false;
+							mouseMoveForm.visible = true;
+							dispatchEvent(new Event("mouseHide"));
+						}
+					}else {
+						mouseMoveForm.visible = false;
 						mouseResizeForm.visible = false;
-						mouseMoveForm.visible = true;
-						dispatchEvent(new Event("mouseHide"));
+						dispatchEvent(new Event("mouseShow"));
 					}
 				}else {
-					if (mouseResizeForm.visible == false) {
+					if(!resizeLock){
+						if (mouseResizeForm.visible == false) {
+							mouseMoveForm.visible = false;
+							mouseResizeForm.visible = true;
+							dispatchEvent(new Event("mouseHide"));
+						}
+					}else {
 						mouseMoveForm.visible = false;
-						mouseResizeForm.visible = true;
-						dispatchEvent(new Event("mouseHide"));
+						mouseResizeForm.visible = false;
+						dispatchEvent(new Event("mouseShow"));
 					}
 				}
 			}else {
@@ -243,10 +258,12 @@ package
 			var distanceToBoard:Number = raioCircle - centerDistance;
 			
 			if (centerDistance < distanceToBoard) {
-				dispatchEvent(new Event("initDrag"));
-				startDragingThis();
+				if(!moveLock){
+					dispatchEvent(new Event("initDrag"));
+					startDragingThis();
+				}
 			}else {
-				redrawCircle();
+				if(!resizeLock) redrawCircle();
 			}
 			
 			

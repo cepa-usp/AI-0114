@@ -8,6 +8,7 @@ package
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.events.TimerEvent;
+	import flash.external.ExternalInterface;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.ui.Mouse;
@@ -16,7 +17,7 @@ package
 	 * ...
 	 * @author Alexandre
 	 */
-	public class Main extends BaseMain
+	public class Main extends BaseMain implements IAi
 	{
 		/**
 		 * Área que será manipulada dentro do gráfico.
@@ -45,8 +46,8 @@ package
 		//Configuração inicial do domínio.
 		private var d_xini:Number = 0;
 		private var d_xend:Number = 6;
-		private var d_yini:Number = 0;
-		private var d_yend:Number = 3;
+		private var d_yini:Number = 3;
+		private var d_yend:Number = 0;
 		
 		//Botões de zoom.
 		private var zoomIn:ZoomIn;
@@ -58,10 +59,10 @@ package
 			configDomain();
 			addCircunference();
 			configZoom();
-			addExternalInterfaceCallbacks();
 			addListeners();
 			
 			iniciaTutorial();
+			addExternalInterfaceCallbacks();
 		}
 		
 		/**
@@ -97,6 +98,7 @@ package
 		{
 			stage.removeEventListener(MouseEvent.MOUSE_MOVE, panning);
 			graph.removeEventListener("endPan", endPan);
+			panning(null);
 		}
 		
 		private function getGraphPixels(x:Number, y:Number):Point
@@ -191,12 +193,11 @@ package
 			posCircunferenceOnGraph = getGraphCoords(circunference.x, circunference.y);
 		}
 		
-		/**
-		 * Adiciona os ExternalInterfaces para comunicação com o JS.
-		 */
-		private function addExternalInterfaceCallbacks():void 
+		private function refreshCircunferenceOnGraph():void 
 		{
-			
+			var posPixels:Point = getGraphPixels(posCircunferenceOnGraph.x, posCircunferenceOnGraph.y);
+			circunference.x = posPixels.x;
+			circunference.y = posPixels.y;
 		}
 		
 		private var zoomFactor:Number = 0.9;
@@ -353,11 +354,230 @@ package
 			
 		}
 		
-		//---------------- Tutorial -----------------------
+		//---------------- Tutorial ---------------------------------
 		
 		override public function iniciaTutorial(e:MouseEvent = null):void  
 		{
 			
+		}
+		
+		//---------------- Fim tutorial ------------------------------
+		
+		/**
+		 * Adiciona os ExternalInterfaces para comunicação com o JS.
+		 */
+		private function addExternalInterfaceCallbacks():void 
+		{
+			if (ExternalInterface.available) {
+				ExternalInterface.addCallback("setCircunferenceX", setCircunferenceX);
+				ExternalInterface.addCallback("getCircunferenceX", getCircunferenceX);
+				ExternalInterface.addCallback("setCircunferenceY", setCircunferenceY);
+				ExternalInterface.addCallback("getCircunferenceY", getCircunferenceY);
+				ExternalInterface.addCallback("setDelta", setDelta);
+				ExternalInterface.addCallback("getDelta", getDelta);
+				ExternalInterface.addCallback("lockCircunferenceMove", lockCircunferenceMove);
+				ExternalInterface.addCallback("lockDeltaChange", lockDeltaChange);
+				ExternalInterface.addCallback("setGraphXmin", setGraphXmin);
+				ExternalInterface.addCallback("setGraphXmax", setGraphXmax);
+				ExternalInterface.addCallback("setGraphYmin", setGraphYmin);
+				ExternalInterface.addCallback("setGraphYmax", setGraphYmax);
+				ExternalInterface.addCallback("getGraphXmin", getGraphXmin);
+				ExternalInterface.addCallback("getGraphXmax", getGraphXmax);
+				ExternalInterface.addCallback("getGraphYmin", getGraphYmin);
+				ExternalInterface.addCallback("getGraphYmax", getGraphYmax);
+				ExternalInterface.addCallback("lockGraphPan", lockGraphPan);
+				ExternalInterface.addCallback("gridVisible", gridVisible);
+				ExternalInterface.addCallback("lockZoom", lockZoom);
+				ExternalInterface.addCallback("domainVisible", domainVisible);
+				ExternalInterface.addCallback("openDomain", openDomain);
+				ExternalInterface.addCallback("setDomainXmin", setDomainXmin);
+				ExternalInterface.addCallback("setDomainXmax", setDomainXmax);
+				ExternalInterface.addCallback("setDomainYmin", setDomainYmin);
+				ExternalInterface.addCallback("setDomainYmax", setDomainYmax);
+				ExternalInterface.addCallback("getDomainXmin", getDomainXmin);
+				ExternalInterface.addCallback("getDomainXmax", getDomainXmax);
+				ExternalInterface.addCallback("getDomainYmin", getDomainYmin);
+				ExternalInterface.addCallback("getDomainYmax", getDomainYmax);
+			}
+		}
+		
+		/* INTERFACE IAi */
+		
+		public function setCircunferenceX(value:Number):void 
+		{
+			circunference.x = graph.x2pixel(value) + graph.x;
+			posCircunferenceOnGraph.x = value;
+		}
+		
+		public function setCircunferenceY(value:Number):void 
+		{
+			circunference.y = graph.y2pixel(value) + graph.y;
+			posCircunferenceOnGraph.y = value;
+		}
+		
+		public function getCircunferenceX():Number 
+		{
+			return posCircunferenceOnGraph.x;
+		}
+		
+		public function getCircunferenceY():Number 
+		{
+			return posCircunferenceOnGraph.y;
+		}
+		
+		public function setDelta(value:Number):void 
+		{
+			circunference.setDelta(getGraphRangeX(0, value));
+		}
+		
+		public function getDelta():Number 
+		{
+			return graph.pixel2x(circunference.x + Math.abs(circunference.getDelta())) - graph.pixel2x(circunference.x);
+		}
+		
+		public function lockCircunferenceMove(value:Boolean):void 
+		{
+			circunference.moveLock = value;
+		}
+		
+		public function lockDeltaChange(value:Boolean):void 
+		{
+			circunference.resizeLock = value;
+		}
+		
+		public function setGraphXmin(value:Number):void 
+		{
+			var raioCircunferenceOnGraph:Number = getGraphCoords(circunference.x + circunference.getDelta(), circunference.y).x - posCircunferenceOnGraph.x;
+			graph.xmin = value;
+			graph.draw();
+			var newCircunferenceRadius:Number = getGraphRangeX(posCircunferenceOnGraph.x, posCircunferenceOnGraph.x + raioCircunferenceOnGraph);
+			circunference.setDelta(newCircunferenceRadius);
+			refreshDomain();
+			refreshCircunferenceOnGraph();
+		}
+		
+		public function setGraphXmax(value:Number):void 
+		{
+			var raioCircunferenceOnGraph:Number = getGraphCoords(circunference.x + circunference.getDelta(), circunference.y).x - posCircunferenceOnGraph.x;
+			graph.xmax = value;
+			graph.draw();
+			var newCircunferenceRadius:Number = getGraphRangeX(posCircunferenceOnGraph.x, posCircunferenceOnGraph.x + raioCircunferenceOnGraph);
+			circunference.setDelta(newCircunferenceRadius);
+			refreshDomain();
+			refreshCircunferenceOnGraph();
+		}
+		
+		public function setGraphYmin(value:Number):void 
+		{
+			var raioCircunferenceOnGraph:Number = getGraphCoords(circunference.x + circunference.getDelta(), circunference.y).x - posCircunferenceOnGraph.x;
+			graph.ymin = value;
+			graph.draw();
+			var newCircunferenceRadius:Number = getGraphRangeX(posCircunferenceOnGraph.x, posCircunferenceOnGraph.x + raioCircunferenceOnGraph);
+			circunference.setDelta(newCircunferenceRadius);
+			refreshDomain();
+			refreshCircunferenceOnGraph();
+		}
+		
+		public function setGraphYmax(value:Number):void 
+		{
+			var raioCircunferenceOnGraph:Number = getGraphCoords(circunference.x + circunference.getDelta(), circunference.y).x - posCircunferenceOnGraph.x;
+			graph.ymax = value;
+			graph.draw();
+			var newCircunferenceRadius:Number = getGraphRangeX(posCircunferenceOnGraph.x, posCircunferenceOnGraph.x + raioCircunferenceOnGraph);
+			circunference.setDelta(newCircunferenceRadius);
+			refreshDomain();
+			refreshCircunferenceOnGraph();
+		}
+		
+		public function getGraphXmin():Number 
+		{
+			return graph.xmin;
+		}
+		
+		public function getGraphXmax():Number 
+		{
+			return graph.xmax;
+		}
+		
+		public function getGraphYmin():Number 
+		{
+			return graph.ymin;
+		}
+		
+		public function getGraphYmax():Number 
+		{
+			return graph.ymax;
+		}
+		
+		public function lockGraphPan(value:Boolean):void 
+		{
+			graph.pan = !value;
+		}
+		
+		public function gridVisible(value:Boolean):void 
+		{
+			graph.grid = value;
+			graph.draw();
+		}
+		
+		public function lockZoom(value:Boolean):void 
+		{
+			zoomIn.mouseEnabled = value;
+			zoomOut.mouseEnabled = value;
+		}
+		
+		public function setDomainXmin(value:Number):void 
+		{
+			d_xini = value;
+			refreshDomain();
+		}
+		
+		public function setDomainXmax(value:Number):void 
+		{
+			d_xend = value;
+			refreshDomain();
+		}
+		
+		public function setDomainYmin(value:Number):void 
+		{
+			d_yini = value;
+			refreshDomain();
+		}
+		
+		public function setDomainYmax(value:Number):void 
+		{
+			d_yend = value;
+			refreshDomain();
+		}
+		
+		public function getDomainXmin():Number 
+		{
+			return d_xini;
+		}
+		
+		public function getDomainXmax():Number 
+		{
+			return d_xend;
+		}
+		
+		public function getDomainYmin():Number 
+		{
+			return d_yini;
+		}
+		
+		public function getDomainYmax():Number 
+		{
+			return d_yend;
+		}
+		
+		public function domainVisible(value:Boolean):void 
+		{
+			domainSpr.visible = value;
+		}
+		
+		public function openDomain(value:Boolean):void 
+		{
+			circunference.openDomain = value;
 		}
 		
 	}
