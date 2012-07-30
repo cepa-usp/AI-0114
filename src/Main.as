@@ -9,6 +9,7 @@ package
 	import flash.events.MouseEvent;
 	import flash.events.TimerEvent;
 	import flash.external.ExternalInterface;
+	import flash.filters.GlowFilter;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.ui.Mouse;
@@ -42,12 +43,13 @@ package
 		 */
 		private var domain:Rectangle;
 		private var domainSpr:Sprite;
+		private var domainGlowBorder:Sprite;
 		
 		//Configuração inicial do domínio.
 		private var d_xini:Number = 0;
 		private var d_xend:Number = 6;
-		private var d_yini:Number = 3;
-		private var d_yend:Number = 0;
+		private var d_yini:Number = 0;
+		private var d_yend:Number = 3;
 		
 		//Botões de zoom.
 		private var zoomIn:ZoomIn;
@@ -132,6 +134,11 @@ package
 			addChild(domainSpr);
 			setChildIndex(domainSpr, 0);
 			
+			domainGlowBorder = new Sprite();
+			addChild(domainGlowBorder);
+			domainGlowBorder.filters = [new GlowFilter(0xFF0000)];
+			setChildIndex(domainGlowBorder, 0);
+			
 			var grapshCoord:Point = getGraphPixels(d_xini, d_yini);
 			domain = new Rectangle(grapshCoord.x, grapshCoord.y, getGraphRangeX(d_xini, d_xend), getGraphRangeY(d_yini, d_yend));
 			refreshDomainSpr();
@@ -143,6 +150,7 @@ package
 			domain = new Rectangle(grapshCoord.x, grapshCoord.y, getGraphRangeX(d_xini, d_xend), getGraphRangeY(d_yini, d_yend));
 			circunference.domain = domain;
 			refreshDomainSpr();
+			refresDomainGlowBorder();
 		}
 		
 		private function refreshDomainSpr():void 
@@ -153,6 +161,34 @@ package
 			domainSpr.graphics.clear();
 			domainSpr.graphics.beginFill(0xC0C0C0, 0.5);
 			domainSpr.graphics.drawRect(0, 0, domain.width, domain.height);
+		}
+		
+		private function refresDomainGlowBorder():void
+		{
+			domainGlowBorder.graphics.clear();
+			
+			if (circunference.onBorderX || circunference.onBorderY) {
+				domainGlowBorder.graphics.lineStyle(1, 0xFF8080);
+				switch(circunference.borderPosition){
+					case Circunference.LEFT:
+						domainGlowBorder.graphics.moveTo(domain.x, domain.y);
+						domainGlowBorder.graphics.lineTo(domain.x, domain.y + domain.height);
+						break;
+					case Circunference.RIGHT:
+						domainGlowBorder.graphics.moveTo(domain.x + domain.width, domain.y);
+						domainGlowBorder.graphics.lineTo(domain.x + domain.width, domain.y + domain.height);
+						break;
+					case Circunference.TOP:
+						domainGlowBorder.graphics.moveTo(domain.x, domain.y);
+						domainGlowBorder.graphics.lineTo(domain.x + domain.width, domain.y);
+						break;
+					case Circunference.DOWN:
+						domainGlowBorder.graphics.moveTo(domain.x, domain.y + domain.height);
+						domainGlowBorder.graphics.lineTo(domain.x + domain.width, domain.y + domain.height);
+						break;
+					
+				}
+			}
 		}
 		
 		var zoomSlider:Slider;
@@ -188,8 +224,22 @@ package
 			
 		}
 		
+		private function initDaggCircunference(e:Event):void 
+		{
+			circunference.addEventListener("stopDrag", refreshCircunferencePos);
+			stage.addEventListener(MouseEvent.MOUSE_MOVE, draggingCircunference);
+		}
+		
+		private function draggingCircunference(e:MouseEvent):void 
+		{
+			posCircunferenceOnGraph = getGraphCoords(circunference.x, circunference.y);
+			refresDomainGlowBorder();
+		}
+		
 		private function refreshCircunferencePos(e:Event):void 
 		{
+			circunference.removeEventListener("stopDrag", refreshCircunferencePos);
+			stage.removeEventListener(MouseEvent.MOUSE_MOVE, draggingCircunference);
 			posCircunferenceOnGraph = getGraphCoords(circunference.x, circunference.y);
 		}
 		
@@ -294,7 +344,7 @@ package
 			botoes.addEventListener(MouseEvent.MOUSE_OVER, overZoomBtn);
 			botoes.addEventListener(MouseEvent.MOUSE_OUT, outZoomBtn);
 			
-			circunference.addEventListener("stopDrag", refreshCircunferencePos);
+			circunference.addEventListener("initDrag", initDaggCircunference);
 			circunference.addEventListener("mouseHide", mouseHide);
 			circunference.addEventListener("mouseShow", mouseShow);
 			graph.addEventListener("initPan", initPan);
@@ -398,6 +448,7 @@ package
 				ExternalInterface.addCallback("getDomainXmax", getDomainXmax);
 				ExternalInterface.addCallback("getDomainYmin", getDomainYmin);
 				ExternalInterface.addCallback("getDomainYmax", getDomainYmax);
+				ExternalInterface.addCallback("insideDomain", insideDomain);
 			}
 		}
 		
@@ -578,6 +629,19 @@ package
 		public function openDomain(value:Boolean):void 
 		{
 			circunference.openDomain = value;
+		}
+		
+		private function insideDomain():Boolean 
+		{
+			if (circunference.openDomain) {
+				if (posCircunferenceOnGraph.x > d_xini && posCircunferenceOnGraph.x < d_xend &&
+					posCircunferenceOnGraph.y > d_yini && posCircunferenceOnGraph.y < d_yend) return true;
+				else return false;
+			}else {
+				if (posCircunferenceOnGraph.x >= d_xini && posCircunferenceOnGraph.x <= d_xend &&
+					posCircunferenceOnGraph.y >= d_yini && posCircunferenceOnGraph.y <= d_yend) return true;
+				else return false;
+			}
 		}
 		
 	}

@@ -15,6 +15,11 @@ package
 	 */
 	public class Circunference extends Sprite
 	{
+		public static const LEFT:String = "left";
+		public static const RIGHT:String = "right";
+		public static const TOP:String = "top";
+		public static const DOWN:String = "down";
+		
 		private const ALCANCE_REDIMENSIONAMENTO = 80 //PORCENTAGEM (80%). ACIMA DESSA % DO RAIO DE DISTANCIA DO CENTRO ATIVA O REDIMENSIONAMENTO DO CIRCULO.
 		private const ALCANCE_MOVIMENTO = 40 //PORCENTAGEM (40%). ABAIXO DESSA % DO RAIO DE DISTANCIA DO CENTRO ATIVA O MOVIMENTO DO CIRCULO.
 		private var circle:Sprite;
@@ -35,7 +40,7 @@ package
 		/**
 		 * Domínio aberto ou fechado.
 		 */
-		public var openDomain:Boolean = true;
+		private var _openDomain:Boolean = true;
 		
 		public function Circunference() 
 		{
@@ -298,7 +303,10 @@ package
 		}
 		
 		public var domain:Rectangle;
-		private var minDist:Number = 4;
+		public const minDist:Number = 4;
+		public var onBorderX:Boolean = false;
+		public var onBorderY:Boolean = false;
+		public var borderPosition:String = "";
 		private function mouseMove_this(e:MouseEvent):void 
 		{
 			if (allowXDrag) {
@@ -308,18 +316,28 @@ package
 				}else{
 					if (Math.abs((stage.mouseX - correcao.x) - domain.x) <= minDist) {
 						this.x = domain.x;
+						onBorderX = true;
+						borderPosition = LEFT;
 					}else if (Math.abs((stage.mouseX - correcao.x) - (domain.x + domain.width)) <= minDist) {
 						this.x = domain.x + domain.width;
+						onBorderX = true;
+						borderPosition = RIGHT;
 					}else {
 						this.x = Math.max(10, Math.min(690, this.parent.mouseX - correcao.x));
+						onBorderX = false;
 					}
 					
 					if (Math.abs((stage.mouseY - correcao.y) - domain.y) <= minDist) {
 						this.y = domain.y;
+						onBorderY = true;
+						borderPosition = TOP;
 					}else if (Math.abs((stage.mouseY - correcao.y) - (domain.y + domain.height)) <= minDist) {
 						this.y = domain.y + domain.height;
+						onBorderY = true;
+						borderPosition = DOWN;
 					}else{
 						this.y = Math.max(10, Math.min(490, this.parent.mouseY - correcao.y));
+						onBorderY = false;
 					}
 				}
 			}
@@ -443,6 +461,23 @@ package
 		{
 			return new Point(floatingPoint.x, floatingPoint.y);
 		}
+		
+		public function get openDomain():Boolean 
+		{
+			return _openDomain;
+		}
+		
+		public function set openDomain(value:Boolean):void 
+		{
+			_openDomain = value;
+			onBorderX = false;
+			onBorderY = false;
+		}
+		
+		/*public function get insideDomain():Boolean
+		{
+			
+		}*/
 	}
 
 }
