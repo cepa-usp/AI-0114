@@ -56,8 +56,10 @@ package
 		function domainVisible(visible:Boolean):void
 		
 		//Configura o domínio aberto ou fechado.
-		function openDomain(open:Boolean):void
+		function openDomain(open:Boolean):void;
 		
+		//Retorna se a circunferência está na borda ou não.
+		function onBorder():Boolean;		
 		
 	}
 	

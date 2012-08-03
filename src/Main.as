@@ -34,9 +34,9 @@ package
 		private var g_xmin:Number = -1;
 		private var g_xmax:Number = 7;
 		private var g_xsize:int = 670;
-		private var g_ymin:Number = -1;
-		private var g_ymax:Number = 5;
 		private var g_ysize:int = 465;
+		private var g_ymin:Number = -1;
+		private var g_ymax:Number;
 		
 		/**
 		 * Área do domínio do gráfico.
@@ -51,12 +51,19 @@ package
 		private var d_yini:Number = 0;
 		private var d_yend:Number = 3;
 		
+		private var inicialConfigDomain:Array = [0, 6, 0, 3];
+		private var inicialCircunferencePos:Point = new Point(2, 2);
+		private var inicialDelta:Number = 1;
+		
 		//Botões de zoom.
 		private var zoomIn:ZoomIn;
 		private var zoomOut:ZoomOut;
 		
 		override protected function init():void 
 		{
+			var xscale:Number = g_xsize / (g_xmax - g_ymin);
+			g_ymax = (g_ysize / xscale) + g_ymin;
+			
 			configGraph();
 			configDomain();
 			addCircunference();
@@ -217,11 +224,12 @@ package
 			addChild(circunference);
 			circunference.domain = domain;
 			
-			var posInicial:Point = getGraphPixels(2, 2);
+			var posInicial:Point = getGraphPixels(inicialCircunferencePos.x, inicialCircunferencePos.y);
 			circunference.x = posInicial.x;
 			circunference.y = posInicial.y;
-			posCircunferenceOnGraph = new Point(2, 2);
+			posCircunferenceOnGraph = new Point(inicialCircunferencePos.x, inicialCircunferencePos.y);
 			
+			setDelta(1);
 		}
 		
 		private function initDaggCircunference(e:Event):void 
@@ -401,7 +409,21 @@ package
 		
 		override public function reset(e:MouseEvent = null):void
 		{
+			graph.setRange(g_xmin, g_xmax, g_ymin, g_ymax);
+			graph.draw();
 			
+			d_xini = inicialConfigDomain[0];
+			d_xend = inicialConfigDomain[1];
+			d_yini = inicialConfigDomain[2];
+			d_yend = inicialConfigDomain[3];
+			refreshDomain();
+			
+			var posInicial:Point = getGraphPixels(inicialCircunferencePos.x, inicialCircunferencePos.y);
+			circunference.x = posInicial.x;
+			circunference.y = posInicial.y;
+			posCircunferenceOnGraph = new Point(inicialCircunferencePos.x, inicialCircunferencePos.y);
+			
+			setDelta(1);
 		}
 		
 		//---------------- Tutorial ---------------------------------
@@ -449,10 +471,18 @@ package
 				ExternalInterface.addCallback("getDomainYmin", getDomainYmin);
 				ExternalInterface.addCallback("getDomainYmax", getDomainYmax);
 				ExternalInterface.addCallback("insideDomain", insideDomain);
+				ExternalInterface.addCallback("onBorder", onBorder);
+				ExternalInterface.addCallback("reset", reset);
 			}
 		}
 		
 		/* INTERFACE IAi */
+		
+		public function onBorder():Boolean 
+		{
+			if (circunference.onBorderX || circunference.onBorderY) return true;
+			else return false;
+		}
 		
 		public function setCircunferenceX(value:Number):void 
 		{
