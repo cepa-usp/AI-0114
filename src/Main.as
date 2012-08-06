@@ -488,12 +488,16 @@ package
 		{
 			circunference.x = graph.x2pixel(value) + graph.x;
 			posCircunferenceOnGraph.x = value;
+			circunference.update();
+			refreshDomain();
 		}
 		
 		public function setCircunferenceY(value:Number):void 
 		{
 			circunference.y = graph.y2pixel(value) + graph.y;
 			posCircunferenceOnGraph.y = value;
+			circunference.update();
+			refreshDomain();
 		}
 		
 		public function getCircunferenceX():Number 

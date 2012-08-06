@@ -352,6 +352,34 @@ package
 		}
 		//----------------------------------- Fim do arraste da classe ---------------------------
 		
+		public function update():void
+		{
+			if (!openDomain) {
+				if (Math.abs((this.x) - domain.x) <= minDist) {
+					this.x = domain.x;
+					onBorderX = true;
+					borderPosition = LEFT;
+				}else if (Math.abs((this.x) - (domain.x + domain.width)) <= minDist) {
+					this.x = domain.x + domain.width;
+					onBorderX = true;
+					borderPosition = RIGHT;
+				}else {
+					onBorderX = false;
+				}
+				
+				if (Math.abs((this.y) - domain.y) <= minDist) {
+					this.y = domain.y;
+					onBorderY = true;
+					borderPosition = TOP;
+				}else if (Math.abs((this.y) - (domain.y + domain.height)) <= minDist) {
+					this.y = domain.y + domain.height;
+					onBorderY = true;
+					borderPosition = DOWN;
+				}else{
+					onBorderY = false;
+				}
+			}
+		}
 		
 		//----------------------------------- Arraste do ponto flutuante -------------------------
 		private function startDragingFloatingPoint():void 
